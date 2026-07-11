@@ -78,3 +78,49 @@ criterion = nn.CrossEntropyLoss()
 
 # Optimizer - updates weights using gradients
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+
+# TRAINING LOOP
+epochs = 5
+
+for epoch in range(epochs):
+    running_loss = 0.0
+
+    for images, labels in train_loader:
+        # 1. Forward pass - get predictions
+        outputs = model(images)
+
+        # 2. Calculate loss - how wrong were we?
+        loss = criterion(outputs, labels)
+
+        # 3. Backward pass - compute gradients
+        optimizer.zero_grad()   # clear old gradients
+        loss.backward()         # backpropagation
+
+        # 4. Update weights - gradient descent step
+        optimizer.step()
+
+        running_loss += loss.item()
+
+    avg_loss = running_loss / len(train_loader)
+    print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+
+
+# EVALUATION
+# Set model to evaluation mode
+model.eval()
+
+correct = 0
+total = 0
+
+# No gradients needed for evaluation - saves memory and computation
+with torch.no_grad():
+    for images, labels in test_loader:
+        outputs = model(images)
+        _, predicted = torch.max(outputs, 1)  # get the class with highest score
+
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+accuracy = 100 * correct / total
+print(f"Test Accuracy: {accuracy:.2f}%")
