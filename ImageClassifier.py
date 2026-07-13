@@ -124,3 +124,15 @@ with torch.no_grad():
 
 accuracy = 100 * correct / total
 print(f"Test Accuracy: {accuracy:.2f}%")
+
+# Training weights - Saving and Loading the Model
+# Save the trained model's weights
+torch.save(model.state_dict(), 'fashion_mnist_model.pth')
+print("Model saved successfully!")
+# Recreate the model architecture first
+model = SimpleNN()
+
+# Load the saved weights into it
+model.load_state_dict(torch.load('fashion_mnist_model.pth'))
+model.eval()  # set to evaluation mode
+print("Model loaded successfully!")
