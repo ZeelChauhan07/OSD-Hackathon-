@@ -155,3 +155,73 @@ plt.imshow(image.squeeze(), cmap='gray')
 plt.title(f"Predicted: {classes[predicted.item()]} | Actual: {classes[true_label]}")
 plt.axis('off')
 plt.show()
+
+class CNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # Convolutional layers - detect spatial patterns
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Fully connected layers - final classification
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+        self.dropout = nn.Dropout(0.25)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))   # 28x28 -> 14x14
+        x = self.pool(F.relu(self.conv2(x)))   # 14x14 -> 7x7
+        x = x.view(x.size(0), -1)               # flatten for fc layers
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
+
+cnn_model = CNN()
+print(cnn_model)
+
+# ===== Train the CNN =====
+
+# Loss + optimizer for the CNN (separate from SimpleNN's)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(cnn_model.parameters(), lr=0.001)
+
+epochs = 5
+
+for epoch in range(epochs):
+    running_loss = 0.0
+    cnn_model.train()   # set to training mode (matters because of Dropout)
+
+    for images, labels in train_loader:
+        outputs = cnn_model(images)
+        loss = criterion(outputs, labels)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item()
+
+    avg_loss = running_loss / len(train_loader)
+    print(f"CNN Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+
+# ===== Evaluate the CNN =====
+cnn_model.eval()
+correct = 0
+total = 0
+
+with torch.no_grad():
+    for images, labels in test_loader:
+        outputs = cnn_model(images)
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+cnn_accuracy = 100 * correct / total
+print(f"CNN Test Accuracy: {cnn_accuracy:.2f}%")
+
+# ===== Save the CNN =====
+torch.save(cnn_model.state_dict(), 'cnn_model.pth')
+print("CNN model saved successfully!")
